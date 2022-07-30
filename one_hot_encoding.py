@@ -6,11 +6,13 @@ only allowed characters are [32-126]
 import numpy as np
 import torch
 
+
 def get_one_hot_for_str(a: str) -> np.ndarray:
     out = np.zeros((len(a), 95))
     for i in range(len(a)):
         out[i] = get_one_hot_for_char(a[i])
     return out
+
 
 def get_one_hot_for_char(a: str) -> np.ndarray:
     """a: character that is [32-126]"""
@@ -18,6 +20,7 @@ def get_one_hot_for_char(a: str) -> np.ndarray:
     vec = np.zeros(95)
     vec[code] = 1
     return vec
+
 
 def fuzzy_one_hot_to_str(x: np.ndarray) -> str:
     """x: length(s) by 95 ndarray,
@@ -39,6 +42,7 @@ def one_hot_to_str(x: np.ndarray) -> str:
     for vec in x:
         out += one_hot_vec_to_char(vec)
     return out
+
 
 def one_hot_vec_to_char(x: np.ndarray) -> str:
     """x: 95 array"""

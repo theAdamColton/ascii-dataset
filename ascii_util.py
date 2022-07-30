@@ -8,6 +8,7 @@ import torch
 import one_hot_encoding
 from string_utils import remove_suffix, ljust
 
+
 def raw_string_to_squareized(s: str, x: int) -> str:
     """
     Takes a string s, with max line length less than x, and number of lines less than x,
@@ -31,7 +32,7 @@ def pad_to_max_line_length(s: str, char=" ") -> str:
     out = ""
     for l in s.splitlines():
         # Gets rid of the last '\n'
-        line = remove_suffix(l, '\n')
+        line = remove_suffix(l, "\n")
         padded_line = ljust(line, maxlen, char)
         out += padded_line + "\n"
 
@@ -57,11 +58,8 @@ def pad_to_x_by_x(s: str, x: int, char=" ") -> str:
 
     out = ""
     if toppad != 0:
-        out = (vertical_pad(x, toppad, char=char) + "\n")
-    out += "".join(
-        line.replace("\n", "").center(x, char) + "\n"
-        for line in lines
-    )
+        out = vertical_pad(x, toppad, char=char) + "\n"
+    out += "".join(line.replace("\n", "").center(x, char) + "\n" for line in lines)
     if botpad != 0:
         out += vertical_pad(x, botpad, char=char)
 
@@ -71,23 +69,23 @@ def pad_to_x_by_x(s: str, x: int, char=" ") -> str:
 def vertical_pad(width: int, height: int, char=" ") -> str:
     if height == 0:
         return ""
-    out = char*width
-    out += ("\n" + char * width) * (height-1)
+    out = char * width
+    out += ("\n" + char * width) * (height - 1)
     return out
 
 
 def string_reshape(s: str, x: int) -> str:
     """Adds line breaks to s so it becomes a square, x by x string"""
     assert len(s) % x == 0
-    res = '\n'.join(s[i:i+x] for i in range(0, len(s), x))
+    res = "\n".join(s[i : i + x] for i in range(0, len(s), x))
     return res
 
 
-def horizontal_concat(s1: str, s2: str, separator = "   |   ") -> str:
+def horizontal_concat(s1: str, s2: str, separator="   |   ") -> str:
     """Concats two 'square' shaped strings"""
     out = ""
     for i, (line1, line2) in enumerate(zip(s1.split("\n"), s2.split("\n"))):
-        if i == len(line1) -1:
+        if i == len(line1) - 1:
             out += line1 + separator + line2
         else:
             out += line1 + separator + line2 + "\n"
@@ -96,20 +94,23 @@ def horizontal_concat(s1: str, s2: str, separator = "   |   ") -> str:
 
 """                Numpy operations                         """
 
+
 def raw_string_to_one_hot(s: str, x: int) -> np.ndarray:
     squareized_s = raw_string_to_squareized(s, x)
     return squareized_string_to_one_hot(squareized_s, x)
 
+
 def squareized_string_to_one_hot(s: str, x: int) -> np.ndarray:
     """Takes a squareized string s and a length x,
     returns an 95 by x by x array of one hot encodings"""
-    s = s.replace('\n', '')
-    embedded = one_hot_encoding.get_one_hot_for_str(s)  
+    s = s.replace("\n", "")
+    embedded = one_hot_encoding.get_one_hot_for_str(s)
     embedded = embedded.reshape(x, x, 95)
     # Makes embeddings nchannels by image_res by image_res
-    embedded = np.moveaxis(embedded, 2,0)
-    embedded=embedded.astype(np.float32)
+    embedded = np.moveaxis(embedded, 2, 0)
+    embedded = embedded.astype(np.float32)
     return embedded
+
 
 def one_hot_embedded_matrix_to_string(a) -> str:
     """Takes a 95 by x by x matrix a of one hot character embeddings and
@@ -124,4 +125,3 @@ def one_hot_embedded_matrix_to_string(a) -> str:
     flat_s = one_hot_encoding.fuzzy_one_hot_to_str(a)
     squareized_s = string_reshape(flat_s, res)
     return squareized_s
-

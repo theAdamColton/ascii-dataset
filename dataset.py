@@ -1,4 +1,3 @@
-
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -6,6 +5,7 @@ from torch.utils.data import TensorDataset
 from os import path
 import random
 from glob import glob
+from tqdm import tqdm
 
 DATADIR = path.abspath(path.join(path.dirname(__name__), "data_aggregation/data/"))
 import utils
@@ -149,3 +149,21 @@ class AsciiArtDataset(Dataset):
 
     def get_file_name(self, i):
         return self.asciifiles[i]
+
+    def calculate_character_counts(self):
+        """
+        Goes through every character in every artwork in the training dataset and counts it
+
+        Returns a 95 length tensor of the character counts
+        """
+
+        counts = torch.zeros(95, dtype=torch.int32)
+
+        print("Loading character frequencies")
+        for x, label in tqdm(self):
+            x = torch.IntTensor(x)
+            character_indeces = x.argmax(0)
+            x_char_counts = torch.bincount(character_indeces.flatten(), minlength=95)
+            counts += x_char_counts
+
+        return counts
