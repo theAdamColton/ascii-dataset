@@ -34,12 +34,14 @@ class AsciiArtDataset(Dataset):
         datapath=DATADIR,
         max_samples=None,
         validation_prop=None,
+        is_validation_dataset=False
     ):
         """
         res: Desired resolution of the square ascii art
         datapath: Optional specification of the directory containing *.txt files, organized by directory in categories
         max_samples: The maximum number of training samples to take.
         validation_prop: The proportion of data to use as validation
+        is_validation_dataset: If this is true, this dataset will only return items from the validation dataset
         """
         self.res = res
 
@@ -71,6 +73,7 @@ class AsciiArtDataset(Dataset):
                                 asciifiles.remove(file)
 
         self.asciifiles = list(asciifiles)
+        self.asciifiles.sort()
         if validation_prop:
             max_idx = int(len(self.asciifiles) * (1 - validation_prop))
             self.validation_ascii_files = self.asciifiles[max_idx:]
@@ -80,6 +83,8 @@ class AsciiArtDataset(Dataset):
                     len(self.asciifiles), len(self.validation_ascii_files)
                 )
             )
+        if is_validation_dataset:
+            self.asciifiles = self.validation_ascii_files
         if max_samples:
             self.asciifiles = self.asciifiles[: max_samples + 1]
 
