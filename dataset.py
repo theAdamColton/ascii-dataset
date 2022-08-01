@@ -51,6 +51,7 @@ class AsciiArtDataset(Dataset):
             datapath = DATADIR
 
         assert path.isdir(datapath)
+        self.datapath = datapath
         # Filters out files that are too large
         asciifiles = set(glob(path.join(datapath, "**/*.txt"), recursive=True))
         for file in list(asciifiles).copy():
@@ -145,7 +146,7 @@ class AsciiArtDataset(Dataset):
         return list(d)
 
     def __get_category_string_from_datapath(self, datapath: str) -> str:
-        return string_utils.remove_prefix(path.dirname(datapath), DATADIR)
+        return string_utils.remove_prefix(path.dirname(datapath), self.datapath)
 
     def decode(self, x) -> str:
         """Takes a matrix of character embeddings, returns a string with correct line breaks"""
