@@ -7,7 +7,7 @@ import random
 from glob import glob
 from tqdm import tqdm
 
-DATADIR = path.abspath(path.join(path.dirname(__name__), "data_aggregation/data/"))
+DATADIR = path.abspath(path.join(path.dirname(__file__), "data_aggregation/data/"))
 import utils
 import ascii_util
 import string_utils
@@ -31,10 +31,10 @@ class AsciiArtDataset(Dataset):
     def __init__(
         self,
         res: int = 36,
-        datapath=DATADIR,
+        datapath: str = None,
         max_samples=None,
         validation_prop=None,
-        is_validation_dataset=False
+        is_validation_dataset=False,
     ):
         """
         res: Desired resolution of the square ascii art
@@ -46,6 +46,9 @@ class AsciiArtDataset(Dataset):
         self.res = res
 
         self.channels = 95
+
+        if not datapath:
+            datapath = DATADIR
 
         assert path.isdir(datapath)
         # Filters out files that are too large
