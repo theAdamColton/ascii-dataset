@@ -12,7 +12,7 @@ for file in tqdm(files):
         # I feel bad, but I want this dataset to focus on 
         # the art.
 
-        replacements = ["jgs", "JRS", "Veilleux", "Normand", "mrf", "/akg", "dp", "fsc", "hjw"]
+        replacements = ["jgs", "JRS", "Veilleux", "Normand", "mrf", "/akg", "dp", "fsc", "hjw", "-Felix Lee-", "SSt", "AsH/HJ98", "sjw", "Pru", "ejm"]
 
         for s in replacements:
             txt = txt.replace(s, len(s) * " ")
