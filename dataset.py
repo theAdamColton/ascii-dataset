@@ -7,7 +7,7 @@ import random
 from glob import glob
 from tqdm import tqdm
 
-DATADIR = path.abspath(path.join(path.dirname(__name__), "data_aggregation/data/"))
+DATADIR = path.abspath(path.join(path.dirname(__file__), "data_aggregation/data/"))
 import utils
 import ascii_util
 import string_utils
@@ -31,21 +31,27 @@ class AsciiArtDataset(Dataset):
     def __init__(
         self,
         res: int = 36,
-        datapath=DATADIR,
+        datapath: str = None,
         max_samples=None,
         validation_prop=None,
+        is_validation_dataset=False,
     ):
         """
         res: Desired resolution of the square ascii art
         datapath: Optional specification of the directory containing *.txt files, organized by directory in categories
         max_samples: The maximum number of training samples to take.
         validation_prop: The proportion of data to use as validation
+        is_validation_dataset: If this is true, this dataset will only return items from the validation dataset
         """
         self.res = res
 
         self.channels = 95
 
+        if not datapath:
+            datapath = DATADIR
+
         assert path.isdir(datapath)
+        self.datapath = datapath
         # Filters out files that are too large
         asciifiles = set(glob(path.join(datapath, "**/*.txt"), recursive=True))
         for file in list(asciifiles).copy():
@@ -71,6 +77,7 @@ class AsciiArtDataset(Dataset):
                                 asciifiles.remove(file)
 
         self.asciifiles = list(asciifiles)
+        self.asciifiles.sort()
         if validation_prop:
             max_idx = int(len(self.asciifiles) * (1 - validation_prop))
             self.validation_ascii_files = self.asciifiles[max_idx:]
@@ -80,6 +87,8 @@ class AsciiArtDataset(Dataset):
                     len(self.asciifiles), len(self.validation_ascii_files)
                 )
             )
+        if is_validation_dataset:
+            self.asciifiles = self.validation_ascii_files
         if max_samples:
             self.asciifiles = self.asciifiles[: max_samples + 1]
 
@@ -137,7 +146,7 @@ class AsciiArtDataset(Dataset):
         return list(d)
 
     def __get_category_string_from_datapath(self, datapath: str) -> str:
-        return string_utils.remove_prefix(path.dirname(datapath), DATADIR)
+        return string_utils.remove_prefix(path.dirname(datapath), self.datapath)
 
     def decode(self, x) -> str:
         """Takes a matrix of character embeddings, returns a string with correct line breaks"""
