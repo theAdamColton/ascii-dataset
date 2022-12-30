@@ -59,12 +59,11 @@ class AsciiArtDataset(Dataset):
                 line_count = sum(1 for _ in f)
             with open(file, "r") as f:
                 line1 = f.readline()
-                # The -1 is because we don't count \n's
-                line_width = len(line1.replace("\n", ""))
+                line_width = len(line1)
             if res is not None:
                 if line_width > res or line_count > res:
                     asciifiles.remove(file)
-                    # print("popped {}, too big".format(file))
+                    #print("popped {}, too big".format(file))
                     continue
 
             with open(file, "r") as f:
