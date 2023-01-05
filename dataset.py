@@ -35,15 +35,19 @@ class AsciiArtDataset(Dataset):
         max_samples=None,
         validation_prop=None,
         is_validation_dataset=False,
+        should_pad_to_res=False,
     ):
         """
         res: Desired resolution of the square ascii art
+        should_pad_to_res: If this is  true than every data item will be padded
+        to the res if it is smaller than the res with space characters.
         datapath: Optional specification of the directory containing *.txt files, organized by directory in categories
         max_samples: The maximum number of training samples to take.
         validation_prop: The proportion of data to use as validation
         is_validation_dataset: If this is true, this dataset will only return items from the validation dataset
         """
         self.res = res
+        self.should_pad_to_res = should_pad_to_res
 
         self.channels = 95
 
@@ -117,10 +121,12 @@ class AsciiArtDataset(Dataset):
         with open(filename, "r") as f:
             content = f.read()
 
-        content = ascii_util.raw_string_to_squareized(content, self.res)
-
-        # Embeds characters
-        embeddings = ascii_util.squareized_string_to_one_hot(content, self.res)
+        if self.should_pad_to_res:
+            content = ascii_util.pad_to_x_by_x(content, self.res)
+            embeddings = ascii_util.squareized_string_to_one_hot(content, self.res)
+        else:
+            # Embeds characters
+            embeddings = ascii_util.any_shape_string_to_one_hot(content)
 
         label = self.__get_category_string_from_datapath(filename)
 

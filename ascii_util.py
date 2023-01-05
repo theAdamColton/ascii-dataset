@@ -9,16 +9,6 @@ import one_hot_encoding
 from string_utils import remove_suffix, ljust
 
 
-def raw_string_to_squareized(s: str, x: int) -> str:
-    """
-    Takes a string s, with max line length less than x, and number of lines less than x,
-    and returns a x by x string with s in the middle of it, padded with space characters.
-    """
-    s_padded = pad_to_max_line_length(s)
-    s_squareized = pad_to_x_by_x(s_padded, x)
-    return s_squareized
-
-
 def pad_to_max_line_length(s: str, char=" ") -> str:
     """Pads each line of s to the max line length of all the lines in s.
     char: character to pad with
@@ -75,7 +65,10 @@ def vertical_pad(width: int, height: int, char=" ") -> str:
 
 
 def string_reshape(s: str, x: int) -> str:
-    """Adds line breaks to s so it becomes a square, x by x string"""
+    """
+    Adds line breaks to s so it becomes a x by y string where y is any
+    size
+    """
     assert len(s) % x == 0
     res = "\n".join(s[i : i + x] for i in range(0, len(s), x))
     return res
@@ -94,11 +87,22 @@ def horizontal_concat(s1: str, s2: str, separator="   |   ") -> str:
 
 """                Numpy operations                         """
 
-
-def raw_string_to_one_hot(s: str, x: int) -> np.ndarray:
-    squareized_s = raw_string_to_squareized(s, x)
-    return squareized_string_to_one_hot(squareized_s, x)
-
+def any_shape_string_to_one_hot(s: str) -> np.ndarray:
+    """
+    s has to be rectangular
+    """
+    height = s.count("\n")
+    s_split = s.splitlines(False)
+    width = len(s_split[0])
+    s_flat = "".join(s_split)
+    embedded =one_hot_encoding.get_one_hot_for_str(s_flat)
+    if embedded.shape[0] % height != 0:
+        import bpdb
+        bpdb.set_trace()
+    embedded = embedded.reshape(height, width, 95)
+    embedded = np.moveaxis(embedded, 2, 0)
+    embedded = embedded.astype(np.float32)
+    return embedded
 
 def squareized_string_to_one_hot(s: str, x: int) -> np.ndarray:
     """Takes a squareized string s and a length x,
@@ -113,15 +117,15 @@ def squareized_string_to_one_hot(s: str, x: int) -> np.ndarray:
 
 
 def one_hot_embedded_matrix_to_string(a) -> str:
-    """Takes a 95 by x by x matrix a of one hot character embeddings and
+    """Takes a 95 by x by y matrix a of one hot character embeddings and
     returns a string"""
-    res = a.shape[1]
-    # Moves channels to last dim
-    a = a.moveaxis(0, 2)
-    # Flattens
-    a = a.reshape(res**2, 95)
     if type(a) == torch.Tensor:
         a = a.cpu().numpy()
+    res_x, res_y = a.shape[1], a.shape[2]
+    # Moves channels to last dim
+    a = np.moveaxis(a, 0, 2)
+    # Flattens
+    a = a.reshape(res_x * res_y, 95)
     flat_s = one_hot_encoding.fuzzy_one_hot_to_str(a)
-    squareized_s = string_reshape(flat_s, res)
-    return squareized_s
+    s = string_reshape(flat_s, res_y)
+    return s
