@@ -51,7 +51,7 @@ def pad_to_x_by_x(s: str, x: int, char=" ") -> str:
         out = vertical_pad(x, toppad, char=char) + "\n"
     out += "".join(line.replace("\n", "").center(x, char) + "\n" for line in lines)
     if botpad != 0:
-        out += vertical_pad(x, botpad, char=char)
+        out += vertical_pad(x, botpad, char=char) + "\n"
 
     return out
 

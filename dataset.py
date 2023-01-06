@@ -7,10 +7,14 @@ import random
 from glob import glob
 from tqdm import tqdm
 
+from torchdata.datapipes.iter import IterableWrapper
+
+
 DATADIR = path.abspath(path.join(path.dirname(__file__), "data_aggregation/data/"))
 import utils
 import ascii_util
 import string_utils
+
 
 
 class AsciiArtDataset(Dataset):
@@ -35,19 +39,19 @@ class AsciiArtDataset(Dataset):
         max_samples=None,
         validation_prop=None,
         is_validation_dataset=False,
-        should_pad_to_res=False,
+        ragged_batch_bin=False,
+        ragged_batch_bin_batch_size=None,
     ):
         """
-        res: Desired resolution of the square ascii art
-        should_pad_to_res: If this is  true than every data item will be padded
-        to the res if it is smaller than the res with space characters.
+        res: Maximum resolution of the square ascii art
+        ragged_batch_bin: Allows different batches to have different resolutions. Across a single batch, all images will have the same batch size.
+            Use this with ragged_batch_bin_batch_size.
         datapath: Optional specification of the directory containing *.txt files, organized by directory in categories
         max_samples: The maximum number of training samples to take.
         validation_prop: The proportion of data to use as validation
         is_validation_dataset: If this is true, this dataset will only return items from the validation dataset
         """
         self.res = res
-        self.should_pad_to_res = should_pad_to_res
 
         self.channels = 95
 
@@ -57,30 +61,49 @@ class AsciiArtDataset(Dataset):
         assert path.isdir(datapath)
         self.datapath = datapath
         # Filters out files that are too large
-        asciifiles = set(glob(path.join(datapath, "**/*.txt"), recursive=True))
-        for file in list(asciifiles).copy():
+        asciilengths = dict()
+        for file in glob(path.join(datapath, "**/*.txt"), recursive=True):
             with open(file, "r") as f:
-                line_count = sum(1 for _ in f)
+                line_count = sum(1 for _ in f.readlines())
             with open(file, "r") as f:
                 line1 = f.readline()
                 line_width = len(line1)
+            side_res = max(line_count, line_width)
             if res is not None:
-                if line_width > res or line_count > res:
-                    asciifiles.remove(file)
-                    #print("popped {}, too big".format(file))
+                if side_res > res:
                     continue
+            asciilengths[file] = side_res
 
-            with open(file, "r") as f:
-                for line in f:
-                    for s in line:
-                        # Only characters in 10, [32, 126] are allowed
-                        code = ord(s)
-                        if code != 10 and (code < 32 or code > 126):
-                            if file in asciifiles:
-                                asciifiles.remove(file)
+        asciifiles = list(asciilengths.keys())
+        # Sorts by length
+        asciifiles.sort(key=lambda x: asciilengths[x])
+        self.asciifiles = asciifiles
 
-        self.asciifiles = list(asciifiles)
-        self.asciifiles.sort()
+        self.ragged_batch_bin = ragged_batch_bin
+        if ragged_batch_bin:
+            assert ragged_batch_bin_batch_size
+
+            self.pad_to_size = dict()
+
+            # Fills out self.pad_to_size such that every file in a batch has the same size,
+            # that being the largest resolution ascii file in the batch.
+            for batch_i in range(0, len(asciifiles), ragged_batch_bin_batch_size):
+                max_side_res = -1
+                for j in range(ragged_batch_bin_batch_size):
+                    if batch_i + j >= len(asciifiles):
+                        break
+                    file = asciifiles[batch_i + j]
+                    side_res = asciilengths[file]
+                    if side_res > max_side_res:
+                        max_side_res = side_res
+
+                for j in range(ragged_batch_bin_batch_size):
+                    if batch_i + j >= len(asciifiles):
+                        break
+                    file = asciifiles[batch_i + j]
+                    self.pad_to_size[file] = max_side_res
+
+
         if validation_prop:
             max_idx = int(len(self.asciifiles) * (1 - validation_prop))
             self.validation_ascii_files = self.asciifiles[max_idx:]
@@ -121,11 +144,11 @@ class AsciiArtDataset(Dataset):
         with open(filename, "r") as f:
             content = f.read()
 
-        if self.should_pad_to_res:
+        if not self.ragged_batch_bin:
             content = ascii_util.pad_to_x_by_x(content, self.res)
             embeddings = ascii_util.squareized_string_to_one_hot(content, self.res)
         else:
-            # Embeds characters
+            content = ascii_util.pad_to_x_by_x(content, self.pad_to_size[filename])
             embeddings = ascii_util.any_shape_string_to_one_hot(content)
 
         label = self.__get_category_string_from_datapath(filename)
@@ -181,3 +204,4 @@ class AsciiArtDataset(Dataset):
             counts += x_char_counts
 
         return counts
+
