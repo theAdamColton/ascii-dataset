@@ -46,6 +46,7 @@ class AsciiArtDataset(Dataset):
         res: Maximum resolution of the square ascii art
         ragged_batch_bin: Allows different batches to have different resolutions. Across a single batch, all images will have the same batch size.
             Use this with ragged_batch_bin_batch_size.
+            This argument will cause this dataset to return batches, not individual data points
         datapath: Optional specification of the directory containing *.txt files, organized by directory in categories
         max_samples: The maximum number of training samples to take.
         validation_prop: The proportion of data to use as validation
@@ -80,6 +81,7 @@ class AsciiArtDataset(Dataset):
         self.asciifiles = asciifiles
 
         self.ragged_batch_bin = ragged_batch_bin
+        self.ragged_batch_bin_batch_size = ragged_batch_bin_batch_size
         if ragged_batch_bin:
             assert ragged_batch_bin_batch_size
 
@@ -119,15 +121,35 @@ class AsciiArtDataset(Dataset):
             self.asciifiles = self.asciifiles[: max_samples + 1]
 
     def __len__(self):
-        return len(self.asciifiles)
+        if not self.ragged_batch_bin:
+            return len(self.asciifiles)
+        else:
+            return len(self.asciifiles) // self.ragged_batch_bin_batch_size
 
     def __getitem__(self, index):
         """
         Returns the character_embeddings representation of the string,
         as a self.channels by self.res by self.res array
         """
-        filename = self.asciifiles[index]
-        return self.__getitem_from_filename__(filename)
+        if not self.ragged_batch_bin_batch_size:
+            filename = self.asciifiles[index]
+            return self.__getitem_from_filename__(filename)
+        else:
+            start_idx = index * self.ragged_batch_bin_batch_size
+            batch_ascii_res = self.pad_to_size[self.asciifiles[start_idx]]
+            batch_out = np.empty((self.ragged_batch_bin_batch_size, 95, batch_ascii_res, batch_ascii_res,)) 
+            batch_out_labels = [""] * self.ragged_batch_bin_batch_size
+
+            def f(i):
+                item = self.__getitem_from_filename__(self.asciifiles[i])[0]
+                return item
+
+            for i in range(start_idx, start_idx + self.ragged_batch_bin_batch_size):
+                batch_out[i-start_idx] = f(i)
+                batch_out_labels[i-start_idx] = self.asciifiles[i]
+            return batch_out, batch_out_labels
+            
+
 
     def get_validation_item(self, index):
         filename = self.validation_ascii_files[index]
