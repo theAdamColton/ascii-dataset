@@ -146,7 +146,7 @@ class AsciiArtDataset(Dataset):
 
             for i in range(start_idx, start_idx + self.ragged_batch_bin_batch_size):
                 batch_out[i-start_idx] = f(i)
-                batch_out_labels[i-start_idx] = self.asciifiles[i]
+                batch_out_labels[i-start_idx] = self.__get_category_string_from_datapath(self.asciifiles[i])
             return batch_out, batch_out_labels
             
 
