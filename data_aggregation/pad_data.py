@@ -10,7 +10,7 @@ import subprocess
 def get_max_line_length(file) -> int:
     max_len = 0
     for line in file.readlines():
-        l = len(line)
+        l = len(line.rstrip())
         if l > max_len:
             max_len = l
     return max_len

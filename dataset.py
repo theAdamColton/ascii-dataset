@@ -11,7 +11,6 @@ from torchdata.datapipes.iter import IterableWrapper
 
 
 DATADIR = path.abspath(path.join(path.dirname(__file__), "data_aggregation/data/"))
-import utils
 import ascii_util
 import string_utils
 
@@ -166,12 +165,8 @@ class AsciiArtDataset(Dataset):
         with open(filename, "r") as f:
             content = f.read()
 
-        if not self.ragged_batch_bin:
-            content = ascii_util.pad_to_x_by_x(content, self.res)
-            embeddings = ascii_util.squareized_string_to_one_hot(content, self.res)
-        else:
-            content = ascii_util.pad_to_x_by_x(content, self.pad_to_size[filename])
-            embeddings = ascii_util.any_shape_string_to_one_hot(content)
+        content = ascii_util.pad_to_x_by_x(content, self.pad_to_size[filename])
+        embeddings = ascii_util.any_shape_string_to_one_hot(content)
 
         label = self.__get_category_string_from_datapath(filename)
 
