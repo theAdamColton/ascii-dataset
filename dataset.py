@@ -7,9 +7,6 @@ import random
 from glob import glob
 from tqdm import tqdm
 
-from torchdata.datapipes.iter import IterableWrapper
-
-
 DATADIR = path.abspath(path.join(path.dirname(__file__), "data_aggregation/data/"))
 import utils
 import ascii_util
